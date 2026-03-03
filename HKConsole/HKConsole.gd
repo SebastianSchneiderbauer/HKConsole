@@ -18,6 +18,9 @@ func _ready() -> void:
 	$VBoxContainer/TextEdit/Label.custom_minimum_size.y = pixelsPerLine * lines
 	
 	text_edit.gui_input.connect(_on_text_edit_input)
+	
+	register_command("list",_cmd_list)
+	register_command("clear",_cmd_clear)
 
 func register_command(command_name: String, callback: Callable) -> void:
 	"""Register a new console command with a callback function"""
