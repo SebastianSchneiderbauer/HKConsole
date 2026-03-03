@@ -15,25 +15,9 @@ func _ready() -> void:
 		starttext += " \n"
 	text_edit.text = starttext + linestart
 	$VBoxContainer/TextEdit.custom_minimum_size.y = pixelsPerLine * lines
+	$VBoxContainer/TextEdit/Label.custom_minimum_size.y = pixelsPerLine * lines
 	
 	text_edit.gui_input.connect(_on_text_edit_input)
-	
-	attachGoofySyntaxHighlighter()
-
-func attachGoofySyntaxHighlighter():
-	# Register built-in commands
-	register_command("clear", _cmd_clear)
-	register_command("list", _cmd_list)
-	
-	# 1. Create the highlighter object
-	var highlighter = CodeHighlighter.new()
-	
-	# 2. Define your color rules
-	# syntax: add_keyword_color("word", Color.HEX_OR_NAME)
-	highlighter.add_keyword_color("RED", Color.RED)
-	
-	# 3. Tell the TextEdit to use this highlighter
-	$VBoxContainer/TextEdit.syntax_highlighter = highlighter
 
 func register_command(command_name: String, callback: Callable) -> void:
 	"""Register a new console command with a callback function"""

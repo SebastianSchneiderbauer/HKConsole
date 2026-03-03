@@ -119,36 +119,35 @@ editor_description = "to customize the look, simply add children to the TextEdit
 
 [node name="Label" type="Label" parent="VBoxContainer/TextEdit"]
 z_index = -1
+custom_minimum_size = Vector2(0, 300)
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -380.0
-offset_top = -330.0
-offset_right = 380.0
+offset_left = -540.0
+offset_top = -299.0
+offset_right = 540.0
 grow_horizontal = 2
 grow_vertical = 0
-text = "[C.L.O.A.K]"
+text = "HKConsole"
 label_settings = SubResource("LabelSettings_5cyjo")
+horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Label" type="Label" parent="VBoxContainer/TextEdit/Label"]
+[node name="Label2" type="Label" parent="VBoxContainer/TextEdit"]
 z_index = -1
 layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
+anchors_preset = 2
 anchor_top = 1.0
-anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = 426.5
-offset_top = -106.0
-offset_right = 551.5
-offset_bottom = -28.0
-grow_horizontal = 2
+offset_left = 18.0
+offset_top = -29.0
+offset_right = 229.0
+offset_bottom = 49.0
 grow_vertical = 0
-text = "version:  0.0.1"
+text = "version:  1.0.0"
 label_settings = SubResource("LabelSettings_uow6b")
 autowrap_mode = 2
 
