@@ -1,7 +1,7 @@
-extends Node
+extends Control
 
 var commands: Dictionary = {}
-const linestart = "| > "
+const linestart = "  HKConsole v1.0.3> "
 @onready var text_edit: TextEdit = $VBoxContainer/TextEdit
 var processing_enter: bool = false  # Flag to prevent race conditions
 @export var folded: bool = true # console starts folded in
@@ -15,7 +15,6 @@ func _ready() -> void:
 		starttext += " \n"
 	text_edit.text = starttext + linestart
 	$VBoxContainer/TextEdit.custom_minimum_size.y = pixelsPerLine * lines
-	$VBoxContainer/TextEdit/Label.custom_minimum_size.y = pixelsPerLine * lines
 	
 	text_edit.gui_input.connect(_on_text_edit_input)
 	
@@ -76,7 +75,7 @@ func handle_enter() -> void:
 	$VBoxContainer/TextEdit.scroll_vertical += 10000
 	var current_line: int = text_edit.get_caret_line()
 	var line_text: String = text_edit.get_line(current_line)
-	var clean_command = line_text.substr(4) # shave off "| > " part
+	var clean_command = line_text.substr(19) # shave off " HKConsole v1.0.2> " part
 	
 	text_edit.insert_text_at_caret("\n| > ")
 	
@@ -87,6 +86,7 @@ func handle_enter() -> void:
 	# Wait a frame before allowing next enter
 	await get_tree().process_frame
 	processing_enter = false
+@export var ypos : float # used for naimating only the y of the vbox without touching x
 func _process(delta: float) -> void:
 	$VBoxContainer/TextEdit.scroll_vertical += delta*10
 	
@@ -108,10 +108,17 @@ func _process(delta: float) -> void:
 		text_edit.set_caret_line(last_line)
 		text_edit.set_caret_column(last_column)
 	
-	if last_column < 3:
-		text_edit.set_line(last_line,"| > ")
+	if last_column < 18:
+		text_edit.set_line(last_line, " HKConsole v1.0.2> ")
 		last_column = text_edit.get_line(last_line).length() - 1
 		text_edit.set_caret_column(last_column + 1)
+		
+	
+	$VBoxContainer.custom_minimum_size.x = get_window().content_scale_size.x + 20
+	$VBoxContainer.position.x = -5 * (1920/float(get_window().content_scale_size.x))
+	$VBoxContainer.position.y = ypos
+	
+	$VBoxContainer/TextEdit.custom_minimum_size.y = pixelsPerLine * lines * (float(get_window().content_scale_size.y)/1080)
 func cleanText(text: String): # cleanes our text from all the icky symbols created by ^ + {letter}
 	var cleaned = text.replace("â", "a").replace("Â", "A")
 	cleaned = cleaned.replace("ê", "e").replace("Ê", "E")

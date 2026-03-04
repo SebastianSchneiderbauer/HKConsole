@@ -1,33 +1,25 @@
-[gd_scene load_steps=9 format=3 uid="uid://dxyrd2jkx4nms"]
+[gd_scene load_steps=8 format=3 uid="uid://dxyrd2jkx4nms"]
 
 [ext_resource type="FontFile" uid="uid://sph0kotu777o" path="res://entities/player/assets/pixel_ui_theme/m5x7.ttf" id="1_5cyjo"]
 [ext_resource type="Script" uid="uid://d3n10qliva4sh" path="res://tools/HKConsole/HKConsole.gd" id="1_uow6b"]
 
-[sub_resource type="LabelSettings" id="LabelSettings_5cyjo"]
-line_spacing = 0.0
-font = ExtResource("1_5cyjo")
-font_size = 320
-font_color = Color(0.14406255, 0.14406255, 0.14406255, 1)
-
-[sub_resource type="LabelSettings" id="LabelSettings_uow6b"]
-line_spacing = 0.0
-font = ExtResource("1_5cyjo")
-font_size = 32
-font_color = Color(0.14406255, 0.14406255, 0.14406255, 1)
+[sub_resource type="Theme" id="Theme_uow6b"]
+default_font = ExtResource("1_5cyjo")
+default_font_size = 32
 
 [sub_resource type="Animation" id="Animation_uow6b"]
 length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("VBoxContainer:position")
+tracks/0/path = NodePath(".:ypos")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector2(0, -900)]
+"values": [-900.0]
 }
 
 [sub_resource type="Animation" id="Animation_bt8xj"]
@@ -36,14 +28,14 @@ length = 0.2
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("VBoxContainer:position")
-tracks/0/interp = 2
+tracks/0/path = NodePath(".:ypos")
+tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.2),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
-"values": [Vector2(0, 0), Vector2(0, -700)]
+"values": [0.0, -700.0]
 }
 
 [sub_resource type="Animation" id="Animation_5cyjo"]
@@ -52,14 +44,14 @@ length = 0.2
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("VBoxContainer:position")
-tracks/0/interp = 2
+tracks/0/path = NodePath(".:ypos")
+tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.2),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
-"values": [Vector2(0, -700), Vector2(0, 0)]
+"values": [-700.0, 0.0]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_bj2bn"]
@@ -70,32 +62,34 @@ _data = {
 }
 
 [node name="HkConsolue" type="Control"]
+process_mode = 3
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -11.0
-offset_top = -17.0
-offset_right = 16.0
 grow_horizontal = 2
 grow_vertical = 2
+pivot_offset = Vector2(576, 0)
+size_flags_vertical = 0
 script = ExtResource("1_uow6b")
+ypos = -900.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(1172, 0)
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -900.0
-offset_bottom = -900.0
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -576.0
+offset_right = 596.0
+offset_bottom = 300.0
 grow_horizontal = 2
-grow_vertical = 2
+pivot_offset = Vector2(584, 88)
 
 [node name="TextEdit" type="TextEdit" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 300)
 layout_mode = 2
-theme_override_fonts/font = ExtResource("1_5cyjo")
-theme_override_font_sizes/font_size = 32
+theme = SubResource("Theme_uow6b")
 text = "
 
 
@@ -103,8 +97,7 @@ text = "
 
 
 
-
-| > "
+ HKConsole v1.0.2> "
 context_menu_enabled = false
 emoji_menu_enabled = false
 selecting_enabled = false
@@ -116,40 +109,6 @@ caret_blink = true
 
 [node name="README" type="Node" parent="VBoxContainer/TextEdit"]
 editor_description = "to customize the look, simply add children to the TextEdit node, similar to the 2 labels"
-
-[node name="Label" type="Label" parent="VBoxContainer/TextEdit"]
-z_index = -1
-custom_minimum_size = Vector2(0, 300)
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -540.0
-offset_top = -299.0
-offset_right = 540.0
-grow_horizontal = 2
-grow_vertical = 0
-text = "HKConsole"
-label_settings = SubResource("LabelSettings_5cyjo")
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Label2" type="Label" parent="VBoxContainer/TextEdit"]
-z_index = -1
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 18.0
-offset_top = -29.0
-offset_right = 229.0
-offset_bottom = 49.0
-grow_vertical = 0
-text = "version:  1.0.0"
-label_settings = SubResource("LabelSettings_uow6b")
-autowrap_mode = 2
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
