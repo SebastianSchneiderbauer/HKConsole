@@ -1,6 +1,6 @@
 # HKConsole
 
-A lightweight in-game developer console for Godot 4. Toggle it open with `^`, type commands, and extend it with your own callbacks at runtime.
+A lightweight in-game developer console for Godot 4. Toggle it open with `^`, type commands, and extend it with your own callbacks at runtime. 
 
 ---
 
@@ -22,7 +22,7 @@ A lightweight in-game developer console for Godot 4. Toggle it open with `^`, ty
 
 | Action | Result |
 |--------|--------|
-| `~` | Toggle console open / closed |
+| `^` | Toggle console open / closed |
 | `Enter` | Execute the typed command |
 | `list` | Print all registered commands |
 | `clear` | Clear the console output |
@@ -61,3 +61,5 @@ HKConsole.log_error("Something broke")
 ## Customization
 
 To change the look, add child nodes to the `TextEdit` node in the scene — similar to the two background `Label` nodes already present.
+
+(currently only works correctly on windows, and maybe mac, linux is broken though)
