@@ -1,7 +1,7 @@
 extends Control
 
 var commands: Dictionary = {}
-const linestart = "  HKConsole v1.0.3> "
+const linestart = " made by HerrKleiderbauer\n HKConsole v1.0.4> "
 @onready var text_edit: TextEdit = $VBoxContainer/TextEdit
 var processing_enter: bool = false  # Flag to prevent race conditions
 @export var folded: bool = true # console starts folded in
@@ -20,6 +20,7 @@ func _ready() -> void:
 	
 	register_command("list",_cmd_list)
 	register_command("clear",_cmd_clear)
+	register_command("exit",_cmd_exit)
 
 func register_command(command_name: String, callback: Callable) -> void:
 	"""Register a new console command with a callback function"""
@@ -158,3 +159,7 @@ func _cmd_list() -> void:
 	logInfo("Available commands:")
 	for cmd in commands.keys():
 		logInfo("  - " + cmd)
+func _cmd_exit() -> void:
+	folded = true
+	$AnimationPlayer.play("in")
+	text_edit.release_focus()
