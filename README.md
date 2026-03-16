@@ -26,6 +26,7 @@ A lightweight in-game developer console for Godot 4. Toggle it open with `^`, ty
 | `Enter` | Execute the typed command |
 | `list` | Print all registered commands |
 | `clear` | Clear the console output |
+| `exit` | Closes the terminal, since closing per `^` does not work on linux rn |
 
 ### Registering Commands
 
