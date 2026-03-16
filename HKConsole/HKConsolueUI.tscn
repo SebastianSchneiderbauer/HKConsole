@@ -1,10 +1,10 @@
-[gd_scene load_steps=8 format=3 uid="uid://dxyrd2jkx4nms"]
+[gd_scene format=3 uid="uid://dxyrd2jkx4nms"]
 
-[ext_resource type="FontFile" uid="uid://sph0kotu777o" path="res://entities/player/assets/pixel_ui_theme/m5x7.ttf" id="1_5cyjo"]
 [ext_resource type="Script" uid="uid://d3n10qliva4sh" path="res://tools/HKConsole/HKConsole.gd" id="1_uow6b"]
+[ext_resource type="FontFile" uid="uid://dfae7vybbbk7o" path="res://tools/HKConsole/m5x7.ttf" id="2_uow6b"]
 
 [sub_resource type="Theme" id="Theme_uow6b"]
-default_font = ExtResource("1_5cyjo")
+default_font = ExtResource("2_uow6b")
 default_font_size = 32
 
 [sub_resource type="Animation" id="Animation_uow6b"]
@@ -61,8 +61,9 @@ _data = {
 &"out": SubResource("Animation_5cyjo")
 }
 
-[node name="HkConsolue" type="Control"]
+[node name="HkConsolue" type="Control" unique_id=996950098]
 process_mode = 3
+z_index = 4096
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -74,7 +75,7 @@ size_flags_vertical = 0
 script = ExtResource("1_uow6b")
 ypos = -900.0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1863938858]
 custom_minimum_size = Vector2(1172, 0)
 layout_mode = 1
 anchors_preset = 5
@@ -86,7 +87,7 @@ offset_bottom = 300.0
 grow_horizontal = 2
 pivot_offset = Vector2(584, 88)
 
-[node name="TextEdit" type="TextEdit" parent="VBoxContainer"]
+[node name="TextEdit" type="TextEdit" parent="VBoxContainer" unique_id=1736518983]
 custom_minimum_size = Vector2(0, 300)
 layout_mode = 2
 theme = SubResource("Theme_uow6b")
@@ -107,10 +108,8 @@ scroll_smooth = true
 caret_type = 1
 caret_blink = true
 
-[node name="README" type="Node" parent="VBoxContainer/TextEdit"]
+[node name="README" type="Node" parent="VBoxContainer/TextEdit" unique_id=1129198295]
 editor_description = "to customize the look, simply add children to the TextEdit node, similar to the 2 labels"
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
-libraries = {
-&"": SubResource("AnimationLibrary_bj2bn")
-}
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=283839259]
+libraries/ = SubResource("AnimationLibrary_bj2bn")
