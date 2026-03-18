@@ -1,13 +1,20 @@
 extends Control
 
 var commands: Dictionary = {}
-const linestart = " made by HerrKleiderbauer\n HKConsole v1.0.4> "
+const linestart = " made by HerrKleiderbauer\n HKConsole "+version+" "
 @onready var text_edit: TextEdit = $VBoxContainer/TextEdit
 var processing_enter: bool = false  # Flag to prevent race conditions
 @export var folded: bool = true # console starts folded in
 @export var commandSplitSymbol: String = " "
 @export var lines : int = 15
 const pixelsPerLine : int = 30
+
+const version : String = "v1.1.0"
+
+var command_history: Array[String] = []
+var history_index: int = -1  # -1 = not navigating
+var history_draft: String = ""  # saves current input when navigation starts
+@export var max_history: int = 50
 
 var starttext = ""
 func _ready() -> void:
@@ -47,14 +54,20 @@ func log_warning(message: String) -> void:
 	logInfo("[WARNING] " + message)
 
 func _on_text_edit_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.keycode == KEY_ENTER:
-		if event.pressed:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_ENTER:
 			if not processing_enter:
 				processing_enter = true
 				handle_enter()
-		else:
-			processing_enter = false
-		
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_UP:
+			_history_up()
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_DOWN:
+			_history_down()
+			get_viewport().set_input_as_handled()
+	elif event is InputEventKey and not event.pressed and event.keycode == KEY_ENTER:
+		processing_enter = false
 		get_viewport().set_input_as_handled()
 func _unhandled_input(event: InputEvent) -> void:
 	# Check for tilda input action to toggle console
@@ -76,19 +89,52 @@ func handle_enter() -> void:
 	$VBoxContainer/TextEdit.scroll_vertical += 10000
 	var current_line: int = text_edit.get_caret_line()
 	var line_text: String = text_edit.get_line(current_line)
-	var clean_command = line_text.substr(19) # shave off " HKConsole v1.0.2> " part
+	var clean_command = line_text.substr(13 + version.length()) # shave off " HKConsole {version} " part
 	
 	text_edit.insert_text_at_caret("\n| > ")
 	
-	# Execute command if not empty
+	# Save to history and execute
 	if clean_command.strip_edges() != "":
+		command_history.append(clean_command)
+		if command_history.size() > max_history:
+			command_history.pop_front()
 		executeCommand(clean_command)
-	
+
+	history_index = -1  # reset navigation on enter
+
 	# Wait a frame before allowing next enter
 	await get_tree().process_frame
 	processing_enter = false
 @export var ypos : float # used for naimating only the y of the vbox without touching x
+func _history_up() -> void:
+	if command_history.is_empty():
+		return
+	var last_line = text_edit.get_line_count() - 1
+	if history_index == -1:
+		history_draft = text_edit.get_line(last_line).substr(19)
+		history_index = command_history.size() - 1
+	elif history_index > 0:
+		history_index -= 1
+	_set_history_line(command_history[history_index])
+
+func _history_down() -> void:
+	if history_index == -1:
+		return
+	if history_index < command_history.size() - 1:
+		history_index += 1
+		_set_history_line(command_history[history_index])
+	else:
+		history_index = -1
+		_set_history_line(history_draft)
+
+func _set_history_line(cmd: String) -> void:
+	var last_line = text_edit.get_line_count() - 1
+	text_edit.set_line(last_line, " HKConsole " + version + "> " + cmd)
+	text_edit.set_caret_line(last_line)
+	text_edit.set_caret_column(text_edit.get_line(last_line).length())
+
 func _process(delta: float) -> void:
+
 	$VBoxContainer/TextEdit.scroll_vertical += delta*10
 	
 	if processing_enter:
@@ -110,7 +156,7 @@ func _process(delta: float) -> void:
 		text_edit.set_caret_column(last_column)
 	
 	if last_column < 18:
-		text_edit.set_line(last_line, " HKConsole v1.0.2> ")
+		text_edit.set_line(last_line, " HKConsole " + version + "> ")
 		last_column = text_edit.get_line(last_line).length() - 1
 		text_edit.set_caret_column(last_column + 1)
 		
