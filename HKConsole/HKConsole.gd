@@ -9,7 +9,7 @@ var processing_enter: bool = false  # Flag to prevent race conditions
 @export var lines : int = 15
 const pixelsPerLine : int = 30
 
-const version : String = "v1.1.0"
+const version : String = "v1.1.1"
 
 var command_history: Array[String] = []
 var history_index: int = -1  # -1 = not navigating
@@ -32,7 +32,7 @@ func _ready() -> void:
 func register_command(command_name: String, callback: Callable) -> void:
 	"""Register a new console command with a callback function"""
 	if commands.has(command_name):
-		log_warning("Overwriting existing command: '%s'" % command_name)
+		push_warning("Overwriting existing command: '%s'" % command_name)
 	
 	commands[command_name] = callback
 	print("Console: Registered command '%s'" % command_name)
@@ -166,6 +166,8 @@ func _process(delta: float) -> void:
 	$VBoxContainer.position.y = ypos
 	
 	$VBoxContainer/TextEdit.custom_minimum_size.y = pixelsPerLine * lines * (float(get_window().content_scale_size.y)/1080)
+	
+	$VBoxContainer/TextEdit.custom_minimum_size.x = get_window().size.x * 2
 func cleanText(text: String): # cleanes our text from all the icky symbols created by ^ + {letter}
 	var cleaned = text.replace("â", "a").replace("Â", "A")
 	cleaned = cleaned.replace("ê", "e").replace("Ê", "E")
