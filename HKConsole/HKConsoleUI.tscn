@@ -1,7 +1,7 @@
-[gd_scene format=3 uid="uid://dxyrd2jkx4nms"]
+[gd_scene format=3 uid="uid://d0at72disdiwu"]
 
-[ext_resource type="Script" uid="uid://d3n10qliva4sh" path="res://tools/HKConsole/HKConsole.gd" id="1_uow6b"]
-[ext_resource type="FontFile" uid="uid://dfae7vybbbk7o" path="res://tools/HKConsole/m5x7.ttf" id="2_uow6b"]
+[ext_resource type="Script" uid="uid://d3n10qliva4sh" path="res://tools/HKConsole/HKConsole/HKConsole.gd" id="1_uow6b"]
+[ext_resource type="FontFile" uid="uid://dfae7vybbbk7o" path="res://tools/HKConsole/HKConsole/m5x7.ttf" id="2_uow6b"]
 
 [sub_resource type="Theme" id="Theme_uow6b"]
 default_font = ExtResource("2_uow6b")
