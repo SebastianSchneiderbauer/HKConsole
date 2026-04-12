@@ -9,22 +9,30 @@ var processing_enter: bool = false  # Flag to prevent race conditions
 @export var lines : int = 15
 const pixelsPerLine : int = 30
 
-const version : String = "v1.1.1"
+const version : String = "v1.1.2"
 
 var command_history: Array[String] = []
 var history_index: int = -1  # -1 = not navigating
 var history_draft: String = ""  # saves current input when navigation starts
 @export var max_history: int = 50
 
+var previous_text_length: int = 0  # Track text changes for auto-scroll
+
 var starttext = ""
+
+func scroll_to_bottom() -> void:
+	"""Scroll the console to the bottom"""
+	text_edit.set_v_scroll(99999)  # Set to very high value to ensure bottom
+
 func _ready() -> void:
 	for i in range(lines-2):
 		starttext += " \n"
 	text_edit.text = starttext + linestart
+	previous_text_length = text_edit.text.length()  # Initialize text length tracker
 	$VBoxContainer/TextEdit.custom_minimum_size.y = pixelsPerLine * lines
-	
+
 	text_edit.gui_input.connect(_on_text_edit_input)
-	
+
 	register_command("list",_cmd_list)
 	register_command("clear",_cmd_clear)
 	register_command("exit",_cmd_exit)
@@ -46,6 +54,7 @@ func unregister_command(command_name: String) -> void:
 func logInfo(message: String) -> void:
 	"""Add a log message to the console"""
 	text_edit.set_line(text_edit.get_line_count() - 1, "    " + message + "\n")
+	scroll_to_bottom()
 func log_error(message: String) -> void:
 	"""Log an error message"""
 	logInfo("[ERROR] " + message)
@@ -84,15 +93,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			var last_column: int = text_edit.get_line(last_line).length()
 			text_edit.set_caret_line(last_line)
 			text_edit.set_caret_column(last_column)
+			scroll_to_bottom()  # Scroll to bottom when opening console
 		get_viewport().set_input_as_handled()
 func handle_enter() -> void:
-	$VBoxContainer/TextEdit.scroll_vertical += 10000
 	var current_line: int = text_edit.get_caret_line()
 	var line_text: String = text_edit.get_line(current_line)
 	var clean_command = line_text.substr(13 + version.length()) # shave off " HKConsole {version} " part
-	
+
 	text_edit.insert_text_at_caret("\n| > ")
-	
+	scroll_to_bottom()  # Scroll to bottom when command is entered
+
 	# Save to history and execute
 	if clean_command.strip_edges() != "":
 		command_history.append(clean_command)
@@ -134,12 +144,15 @@ func _set_history_line(cmd: String) -> void:
 	text_edit.set_caret_column(text_edit.get_line(last_line).length())
 
 func _process(delta: float) -> void:
-
-	$VBoxContainer/TextEdit.scroll_vertical += delta*10
-	
 	if processing_enter:
 		return
-	
+
+	# Auto-scroll to bottom when user types (text length changes)
+	var current_text_length = text_edit.text.length()
+	if current_text_length != previous_text_length:
+		scroll_to_bottom()
+		previous_text_length = current_text_length
+
 	# clean text
 	var cleanedText = cleanText(text_edit.text)
 	if text_edit.text != cleanedText:
@@ -199,10 +212,12 @@ func executeCommand(command: String):
 # Built-in commands
 func _cmd_clear() -> void:
 	text_edit.text = starttext + linestart
+	previous_text_length = text_edit.text.length()  # Update text length tracker
 	var last_line: int = text_edit.get_line_count() - 1
 	var last_column: int = text_edit.get_line(last_line).length()
 	text_edit.set_caret_line(last_line)
 	text_edit.set_caret_column(last_column)
+	scroll_to_bottom()
 func _cmd_list() -> void:
 	logInfo("Available commands:")
 	for cmd in commands.keys():
