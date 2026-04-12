@@ -20,6 +20,9 @@ var previous_text_length: int = 0  # Track text changes for auto-scroll
 
 var starttext = ""
 
+# Log delay system
+@export var log_delay: float = 0.05  # Delay in seconds between each log line
+
 func scroll_to_bottom() -> void:
 	"""Scroll the console to the bottom"""
 	text_edit.set_v_scroll(99999)  # Set to very high value to ensure bottom
@@ -62,9 +65,14 @@ func unregister_command(command_name: String) -> void:
 	else:
 		log_warning("Command '%s' not found" % command_name)
 func logInfo(message: String) -> void:
-	"""Add a log message to the console"""
+	"""Add a log message to the console with delay"""
+	# Display the message immediately
 	text_edit.set_line(text_edit.get_line_count() - 1, "    " + message + "\n")
 	scroll_to_bottom()
+
+	# Wait for delay before allowing next message
+	await get_tree().create_timer(log_delay).timeout
+
 func log_error(message: String) -> void:
 	"""Log an error message"""
 	logInfo("[ERROR] " + message)
@@ -238,9 +246,9 @@ func _cmd_clear() -> void:
 	text_edit.set_caret_column(last_column)
 	scroll_to_bottom()
 func _cmd_list() -> void:
-	logInfo("Available commands:")
+	await logInfo("Available commands:")
 	for cmd in commands.keys():
-		logInfo("  - " + cmd)
+		await logInfo("  - " + cmd)
 func _cmd_exit() -> void:
 	folded = true
 	$AnimationPlayer.play("in")
