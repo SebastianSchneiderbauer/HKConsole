@@ -61,7 +61,7 @@ _data = {
 &"out": SubResource("Animation_5cyjo")
 }
 
-[node name="HkConsolue" type="Control" unique_id=996950098]
+[node name="HkConsole" type="Control" unique_id=996950098]
 process_mode = 3
 layout_mode = 3
 anchors_preset = 15
