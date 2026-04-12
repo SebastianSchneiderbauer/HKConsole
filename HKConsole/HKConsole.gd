@@ -24,6 +24,16 @@ func scroll_to_bottom() -> void:
 	"""Scroll the console to the bottom"""
 	text_edit.set_v_scroll(99999)  # Set to very high value to ensure bottom
 
+func _scroll_up() -> void:
+	"""Scroll the console view up smoothly"""
+	var current_scroll = text_edit.get_v_scroll()
+	text_edit.set_v_scroll(max(0, current_scroll - 1))
+
+func _scroll_down() -> void:
+	"""Scroll the console view down smoothly"""
+	var current_scroll = text_edit.get_v_scroll()
+	text_edit.set_v_scroll(current_scroll + 1)
+
 func _ready() -> void:
 	for i in range(lines-2):
 		starttext += " \n"
@@ -79,6 +89,15 @@ func _on_text_edit_input(event: InputEvent) -> void:
 		processing_enter = false
 		get_viewport().set_input_as_handled()
 func _unhandled_input(event: InputEvent) -> void:
+	# Check for scroll wheel events when console is open
+	if not folded and event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_scroll_up()
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_scroll_down()
+			get_viewport().set_input_as_handled()
+
 	# Check for tilda input action to toggle console
 	if event.is_action_pressed("tilda"):
 		folded = !folded
