@@ -36,15 +36,15 @@ From any script, call:
 HKConsole.register_command("my_command", _my_callback)
 
 func _my_callback() -> void:
-    HKConsole.logInfo("Hello from my_command!")
+	HKConsole.logInfo("Hello from my_command!")
 ```
 
 ### Logging
 
 ```gdscript
 HKConsole.logInfo("Some info")
-HKConsole.log_warning("Something looks off")
-HKConsole.log_error("Something broke")
+HKConsole.logWarning("Something looks off")
+HKConsole.logError("Something broke")
 ```
 
 ---

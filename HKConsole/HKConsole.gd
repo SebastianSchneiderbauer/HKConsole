@@ -63,7 +63,7 @@ func unregister_command(command_name: String) -> void:
 	if commands.erase(command_name):
 		print("Console: Unregistered command '%s'" % command_name)
 	else:
-		log_warning("Command '%s' not found" % command_name)
+		logWarning("Command '%s' not found" % command_name)
 func logInfo(message: String) -> void:
 	"""Add a log message to the console with delay"""
 	# Display the message immediately
@@ -73,10 +73,10 @@ func logInfo(message: String) -> void:
 	# Wait for delay before allowing next message
 	await get_tree().create_timer(log_delay).timeout
 
-func log_error(message: String) -> void:
+func logError(message: String) -> void:
 	"""Log an error message"""
 	logInfo("[ERROR] " + message)
-func log_warning(message: String) -> void:
+func logWarning(message: String) -> void:
 	"""Log a warning message"""
 	logInfo("[WARNING] " + message)
 
@@ -227,7 +227,7 @@ func executeCommand(command: String):
 	
 	# Check if command exists
 	if not commands.has(operation):
-		log_error("Unknown command: '%s'. Type 'list' for available commands." % operation)
+		logError("Unknown command: '%s'. Type 'list' for available commands." % operation)
 		return
 	
 	# Execute the command
