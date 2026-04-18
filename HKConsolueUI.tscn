@@ -1,4 +1,4 @@
-[gd_scene format=4 uid="uid://cmb56xg0c5igm"]
+[gd_scene format=4 uid="uid://cvn1kla5v8sgl"]
 
 [sub_resource type="GDScript" id="GDScript_6xx6t"]
 script/source = "extends Control
