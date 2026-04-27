@@ -83,7 +83,7 @@ func _on_text_edit_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 func _unhandled_input(event: InputEvent) -> void:
 	# Check for tilda input action to toggle console
-	if event.is_action_pressed(\"tilda\"):
+	if event.is_action_pressed(\"tilda\") or (event.is_action_pressed(\"escape\") and !folded):
 		folded = !folded
 		if folded:
 			$AnimationPlayer.play(\"in\")
