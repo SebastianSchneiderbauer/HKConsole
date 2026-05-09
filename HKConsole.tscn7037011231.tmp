@@ -1,7 +1,5 @@
 [gd_scene format=4 uid="uid://cvn1kla5v8sgl"]
 
-[ext_resource type="Script" uid="uid://bs0afo0432gqo" path="res://tools/HKConsole/ConsoleCheatConfig.gd" id="1_34iib"]
-
 [sub_resource type="GDScript" id="GDScript_6xx6t"]
 script/source = "extends Control
 
@@ -22,7 +20,7 @@ var history_index: int = -1  # -1 = not navigating
 var history_draft: String = \"\"  # saves current input when navigation starts
 @export var max_history: int = 50
 
-@export var cheatConfig: HKConsoleCheatConfig
+@export var CheatConfig: HKConsoleCheatConfig
 @export var cheatMode: bool = false
 var cheatCommands: Array = []
 
@@ -47,10 +45,6 @@ func _ready() -> void:
 	register_command(\"listall\",_cmd_list_all, true)
 	register_command(\"clear\",_cmd_clear, false)
 	register_command(\"exit\",_cmd_exit, false)
-	
-	# register cheat en/dis-able command, if we have a cheatConfig
-	if cheatConfig != null:
-		register_command(cheatConfig.cheatActivationString, _enableCheats, true)
 
 func register_command(command_name: String, callback: Callable, secret: bool, isCheat: bool = false) -> void:
 	
@@ -233,7 +227,7 @@ func executeCommand(command: String):
 	if splitString.is_empty():
 		return
 	
-	var operation: String = splitString[0]
+	var operation: String = splitString[0].to_lower()
 	#var parameters: Array = splitString.slice(1)
 	
 	# Check if command exists
@@ -270,22 +264,9 @@ func _cmd_exit() -> void:
 	folded = true
 	$AnimationPlayer.play(\"in\")
 	text_edit.release_focus()
-func _enableCheats() -> void:# i assume we have a cheatconfig, since the command is not registered if you dont have one
-	cheatMode = !cheatMode
-	
-	var textInput : String
-	if cheatMode:
-		textInput = cheatConfig.onActivateString
-	else:
-		textInput = cheatConfig.onDeactivateString
-	
-	for part in textInput.split(cheatConfig.splitSymbol):
-		logInfo(part)
+func _enableCheats() -> void:
+	pass
 "
-
-[sub_resource type="Resource" id="Resource_34iib"]
-script = ExtResource("1_34iib")
-metadata/_custom_type_script = "uid://bs0afo0432gqo"
 
 [sub_resource type="Image" id="Image_fvg5d"]
 data = {
@@ -536,7 +517,6 @@ pivot_offset = Vector2(576, 0)
 size_flags_vertical = 0
 mouse_filter = 2
 script = SubResource("GDScript_6xx6t")
-cheatConfig = SubResource("Resource_34iib")
 ypos = -900.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1863938858]
