@@ -2,7 +2,7 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://dfae7vybbbk7o"
+uid="uid://cryb2cwmihp3m"
 path="res://.godot/imported/m5x7.ttf-1f75add524c07ad6336cb30acb1ba11d.fontdata"
 
 [deps]
@@ -23,7 +23,7 @@ allow_system_fallback=true
 force_autohinter=false
 modulate_color_glyphs=false
 hinting=1
-subpixel_positioning=1
+subpixel_positioning=4
 keep_rounding_remainders=true
 oversampling=0.0
 Fallbacks=null
