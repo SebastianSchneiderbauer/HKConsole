@@ -14,7 +14,13 @@ A lightweight in-game developer console for Godot 4. Toggle it open with `^`, ty
    |------|------|
    | `HKConsole` | `res://tools/HKConsole/HKConsoleUI.tscn` |
 
-3. **Add the input action** — In `Project → Project Settings → Input Map`, create an action named `tilda` and bind it to the `^` key. IMPORTANT: the action should be "AsciiCircum or QuoteLeft (Physical) or AsciiCircum (Unicode)"
+3. **Add the input actions** — In `Project → Project Settings → Input Map`, create the following actions. The names must match **exactly**, otherwise the console won't pick them up:
+
+   | Action name | Bind to | Notes |
+   |-------------|---------|-------|
+   | `tilda` | `^` key | IMPORTANT: the action should be "AsciiCircum or QuoteLeft (Physical) or AsciiCircum (Unicode)" |
+   | `mouseWhUp` | Mouse Wheel Up | Scrolls the console output up while it's open |
+   | `mouseWhDown` | Mouse Wheel Down | Scrolls the console output down while it's open |
 
 ---
 

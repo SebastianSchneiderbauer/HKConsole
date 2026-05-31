@@ -107,6 +107,15 @@ func _on_text_edit_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Scroll the console output with the mouse wheel while it's open
+	if !folded and event.is_action_pressed(\"mouseWhUp\"):
+		text_edit.set_v_scroll(text_edit.get_v_scroll() - 1)
+		get_viewport().set_input_as_handled()
+		return
+	if !folded and event.is_action_pressed(\"mouseWhDown\"):
+		text_edit.set_v_scroll(text_edit.get_v_scroll() + 1)
+		get_viewport().set_input_as_handled()
+		return
 	# Check for tilda input action to toggle console
 	if event.is_action_pressed(\"tilda\") or (event.is_action_pressed(\"escape\") and !folded):
 		folded = !folded
