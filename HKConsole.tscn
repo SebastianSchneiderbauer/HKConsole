@@ -193,7 +193,7 @@ func _process(delta: float) -> void:
 		previous_text_length = current_text_length
 
 	# clean text
-	var cleanedText = cleanText(text_edit.text)
+	var cleanedText = _cleanText(text_edit.text)
 	if text_edit.text != cleanedText:
 		text_edit.text = cleanedText
 		text_edit.set_caret_line(text_edit.get_line_count() - 1)
@@ -221,21 +221,27 @@ func _process(delta: float) -> void:
 	
 	$VBoxContainer/TextEdit.custom_minimum_size.x = get_window().size.x * 2
 
-func cleanText(text: String): # cleanes our text from all the icky symbols created by ^ + {letter}
-	var cleaned = text.replace(\"â\", \"a\").replace(\"Â\", \"A\")
-	cleaned = cleaned.replace(\"ê\", \"e\").replace(\"Ê\", \"E\")
-	cleaned = cleaned.replace(\"î\", \"i\").replace(\"Î\", \"I\")
-	cleaned = cleaned.replace(\"ô\", \"o\").replace(\"Ô\", \"O\")
-	cleaned = cleaned.replace(\"û\", \"u\").replace(\"Û\", \"U\")
-	cleaned = cleaned.replace(\"ŵ\", \"w\").replace(\"Ŵ\", \"W\")
-	cleaned = cleaned.replace(\"ẑ\", \"z\").replace(\"Ẑ\", \"Z\")
-	cleaned = cleaned.replace(\"ĵ\", \"j\").replace(\"Ĵ\", \"J\")
-	cleaned = cleaned.replace(\"ĥ\", \"h\").replace(\"Ĥ\", \"H\")
-	cleaned = cleaned.replace(\"ĝ\", \"ĝ\").replace(\"Ĝ\", \"G\")
-	cleaned = cleaned.replace(\"ŝ\", \"s\").replace(\"Ŝ\", \"S\")
-	cleaned = cleaned.replace(\"ŷ\", \"y\").replace(\"Ŷ\", \"Y\")
-	cleaned = cleaned.replace(\"ĉ\", \"c\").replace(\"Ĉ\", \"C\")
-	cleaned = cleaned.replace(\"^\",\"\")
+const CIRCUMFLEX_MAP := {
+	\"â\": \"a\", \"Â\": \"A\",
+	\"ê\": \"e\", \"Ê\": \"E\",
+	\"î\": \"i\", \"Î\": \"I\",
+	\"ô\": \"o\", \"Ô\": \"O\",
+	\"û\": \"u\", \"Û\": \"U\",
+	\"ŵ\": \"w\", \"Ŵ\": \"W\",
+	\"ẑ\": \"z\", \"Ẑ\": \"Z\",
+	\"ĵ\": \"j\", \"Ĵ\": \"J\",
+	\"ĥ\": \"h\", \"Ĥ\": \"H\",
+	\"ĝ\": \"g\", \"Ĝ\": \"G\",
+	\"ŝ\": \"s\", \"Ŝ\": \"S\",
+	\"ŷ\": \"y\", \"Ŷ\": \"Y\",
+	\"ĉ\": \"c\", \"Ĉ\": \"C\",
+	\"^\": \"\",
+}
+
+func _cleanText(text: String) -> String:
+	var cleaned := \"\"
+	for c in text:
+		cleaned += CIRCUMFLEX_MAP.get(c, c)
 	return cleaned
 
 func executeCommand(command: String):
@@ -249,7 +255,7 @@ func executeCommand(command: String):
 		return
 	
 	var operation: String = splitString[0]
-	#var parameters: Array = splitString.slice(1)
+	var parameters: Array = splitString.slice(1)
 	
 	# Check if command exists
 	if not commands.has(operation):
@@ -261,7 +267,10 @@ func executeCommand(command: String):
 	
 	# Call with parameters (for now, callback receives no args)
 	# In the future you can pass parameters: callback.call(parameters)
-	callback.call()
+	if parameters != []:
+		callback.call(parameters)
+	else:
+		callback.call()
 
 # Built-in commands
 func _cmd_clear() -> void:
