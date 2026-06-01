@@ -13,7 +13,7 @@ var processing_enter: bool = false  # Flag to prevent race conditions
 @export var lines : int = 15
 const pixelsPerLine : int = 30
 
-const version : String = \"v2.0.0\"
+const version : String = \"v3.0.0\"
 
 var command_history: Array[String] = []
 var history_index: int = -1  # -1 = not navigating
@@ -42,7 +42,6 @@ func _ready() -> void:
 	text_edit.gui_input.connect(_on_text_edit_input)
 
 	register_command(\"list\",_cmd_list, false)
-	register_command(\"listall\",_cmd_list_all, true)
 	register_command(\"clear\",_cmd_clear, false)
 	register_command(\"exit\",_cmd_exit, false)
 	
@@ -267,10 +266,7 @@ func executeCommand(command: String):
 	
 	# Call with parameters (for now, callback receives no args)
 	# In the future you can pass parameters: callback.call(parameters)
-	if parameters != []:
-		callback.call(parameters)
-	else:
-		callback.call()
+	callback.call(parameters)
 
 # Built-in commands
 func _cmd_clear() -> void:
@@ -281,20 +277,27 @@ func _cmd_clear() -> void:
 	text_edit.set_caret_line(last_line)
 	text_edit.set_caret_column(last_column)
 	scroll_to_bottom()
-func _cmd_list() -> void:
+func _cmd_list(params: Array) -> void:
+	if not checkParameters(params, [], [\"-all\"]):
+		log_error(\"the parameters for this function are faulty\")
+		return
+	
 	logInfo(\"Available commands:\")
 	for cmd in commands.keys():
-		if cmd not in secretCommands:
+		if cmd not in secretCommands or params.has(\"-all\"):
 			logInfo(\"  - \" + cmd)
-func _cmd_list_all() -> void:
-	logInfo(\"Available commands:\")
-	for cmd in commands.keys():
-		logInfo(\"  - \" + cmd)
-func _cmd_exit() -> void:
+func _cmd_exit(params: Array) -> void:
+	if not checkParameters(params, [], []):
+		log_error(\"this function accepts no parameters\")
+		return
+	
 	folded = true
 	$AnimationPlayer.play(\"in\")
 	text_edit.release_focus()
-func _enableCheats() -> void:# i assume we have a cheatconfig, since the command is not registered if you dont have one
+func _enableCheats(params: Array) -> void:
+	if not checkParameters(params, [], []):
+		log_error(\"this function accepts no parameters\")
+		return
 	cheatMode = !cheatMode
 	
 	var textInput : String
@@ -305,6 +308,18 @@ func _enableCheats() -> void:# i assume we have a cheatconfig, since the command
 	
 	for part in textInput.split(cheatConfig.splitSymbol):
 		logInfo(part)
+
+# method for functions so you can validate the inputted parameters
+func checkParameters(parameters: Array, needed: Array, allowed: Array) -> bool:
+	for neededParam in needed:
+		if neededParam not in parameters: # do we have a needed command that is not in the provided parameters
+			return false
+	
+	for providedParam in parameters:
+		if providedParam not in allowed:
+			return false
+	
+	return true
 "
 
 [sub_resource type="Image" id="Image_fvg5d"]
