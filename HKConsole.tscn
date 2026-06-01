@@ -15,7 +15,7 @@ var processing_enter: bool = false  # Flag to prevent race conditions
 @export var lines : int = 15
 const pixelsPerLine : int = 30
 
-const version : String = \"v3.0.0\"
+const version : String = \"v3.1.0\"
 
 var command_history: Array[String] = []
 var history_index: int = -1  # -1 = not navigating
@@ -269,6 +269,10 @@ func executeCommand(command: String):
 	# Call with parameters (for now, callback receives no args)
 	# In the future you can pass parameters: callback.call(parameters)
 	if callback.get_argument_count() == 0: # old case, has no params set up, we ignore it and skip parameters
+		if parameters.size() != 0:
+			log_error(\"this function does not accept parameters\")
+			return
+		
 		callback.call()
 	else:
 		callback.call(parameters)
@@ -291,18 +295,11 @@ func _cmd_list(params: Array) -> void:
 	for cmd in commands.keys():
 		if cmd not in secretCommands or params.has(\"-all\"):
 			logInfo(\"  - \" + cmd)
-func _cmd_exit(params: Array) -> void:
-	if not checkParameters(params, [], []):
-		log_error(\"this function accepts no parameters\")
-		return
-	
+func _cmd_exit() -> void:
 	folded = true
 	$AnimationPlayer.play(\"in\")
 	text_edit.release_focus()
-func _enableCheats(params: Array) -> void:
-	if not checkParameters(params, [], []):
-		log_error(\"this function accepts no parameters\")
-		return
+func _enableCheats() -> void:
 	cheatMode = !cheatMode
 	
 	var textInput : String

@@ -48,7 +48,10 @@ HKConsole.register_command(command_name: String, callback: Callable, secret: boo
 | `secret` | `bool` | If `true`, the command is hidden from `list` (still visible via `list -all`) |
 | `isCheat` | `bool` | If `true`, the command can only be executed while cheat mode is active |
 
-Every callback **must** accept a `params: Array` argument. Arguments typed after the command name are split on `commandSplitSymbol` (default: space) and forwarded as that array.
+The console checks how many arguments the callback declares and dispatches accordingly:
+
+- **No parameters** — declare the function with **no arguments**. Any arguments the user types will be silently ignored. Do **not** add a `params` argument "just in case" — that would switch it into parameter-receiving mode.
+- **With parameters** — declare the function with exactly **one `params: Array` argument**. Arguments typed after the command name are split on `commandSplitSymbol` (default: space) and forwarded as that array.
 
 Use `HKConsole.checkParameters(params, needed, allowed)` to validate the received parameters. It returns `false` if any entry in `needed` is missing from `params`, or if `params` contains a value not listed in `allowed`.
 
@@ -63,13 +66,10 @@ HKConsole.checkParameters(params: Array, needed: Array, allowed: Array) -> bool
 | `allowed` | All flags that are permitted (superset of `needed`) |
 
 ```gdscript
-# Command that accepts no parameters
+# Command that takes no console parameters — NO function argument
 HKConsole.register_command("my_command", _my_callback, false)
 
-func _my_callback(params: Array) -> void:
-	if not HKConsole.checkParameters(params, [], []):
-		HKConsole.logError("this command accepts no parameters")
-		return
+func _my_callback() -> void:
 	HKConsole.logInfo("Hello from my_command!")
 
 # Command with an optional flag — e.g. "status -v"
