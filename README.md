@@ -31,7 +31,7 @@ A lightweight in-game developer console for Godot 4. Toggle it open with `^`, ty
 | `^` | Toggle console open / closed |
 | `Enter` | Execute the typed command |
 | `list` | Print all registered (non-secret) commands |
-| `listall` | Print all registered commands including secret ones |
+| `list -all` | Print all registered commands including secret ones |
 | `clear` | Clear the console output |
 | `exit` | Closes the terminal, since closing per `^` does not work on linux rn |
 
@@ -45,21 +45,49 @@ HKConsole.register_command(command_name: String, callback: Callable, secret: boo
 |-----------|------|-------------|
 | `command_name` | `String` | The string the user types to invoke the command |
 | `callback` | `Callable` | The function to call when the command is executed |
-| `secret` | `bool` | If `true`, the command is hidden from `list` (still visible via `listall`) |
+| `secret` | `bool` | If `true`, the command is hidden from `list` (still visible via `list -all`) |
 | `isCheat` | `bool` | If `true`, the command can only be executed while cheat mode is active |
 
+Every callback **must** accept a `params: Array` argument. Arguments typed after the command name are split on `commandSplitSymbol` (default: space) and forwarded as that array.
+
+Use `HKConsole.checkParameters(params, needed, allowed)` to validate the received parameters. It returns `false` if any entry in `needed` is missing from `params`, or if `params` contains a value not listed in `allowed`.
+
 ```gdscript
-# Normal command — visible in list
+HKConsole.checkParameters(params: Array, needed: Array, allowed: Array) -> bool
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `params` | The array received by the callback |
+| `needed` | Flags that **must** be present |
+| `allowed` | All flags that are permitted (superset of `needed`) |
+
+```gdscript
+# Command that accepts no parameters
 HKConsole.register_command("my_command", _my_callback, false)
 
-# Secret command — hidden from list, but still executable
-HKConsole.register_command("my_debug_cmd", _my_callback, true)
+func _my_callback(params: Array) -> void:
+	if not HKConsole.checkParameters(params, [], []):
+		HKConsole.logError("this command accepts no parameters")
+		return
+	HKConsole.logInfo("Hello from my_command!")
+
+# Command with an optional flag — e.g. "status -v"
+HKConsole.register_command("status", _cmd_status, false)
+
+func _cmd_status(params: Array) -> void:
+	if not HKConsole.checkParameters(params, [], ["-v"]):
+		HKConsole.logError("Usage: status [-v]")
+		return
+	HKConsole.logInfo("OK")
+	if params.has("-v"):
+		HKConsole.logInfo("verbose details here...")
+
+# Secret command — hidden from list, visible via list -all
+HKConsole.register_command("my_debug_cmd", _my_debug, true)
 
 # Cheat command — only executable when cheat mode is active
 HKConsole.register_command("god_mode", _god_mode, false, true)
-
-func _my_callback() -> void:
-	HKConsole.logInfo("Hello from my_command!")
 ```
 
 ### Logging
@@ -77,7 +105,7 @@ HKConsole.logError("Something broke")
 | Property | Default | Description |
 |----------|---------|-------------|
 | `folded` | `true` | Start with the console hidden |
-| `commandSplitSymbol` | `" "` | Delimiter between command and args (not yet implemented) |
+| `commandSplitSymbol` | `" "` | Delimiter between command name and its arguments |
 | `lines` | `15` | Visible line count, aka the height of the console |
 | `max_history` | `50` | Number of previously entered commands kept in history |
 | `cheatConfig` | `null` | Optional `HKConsoleCheatConfig` resource — enables cheat mode support |
@@ -107,5 +135,3 @@ Cheat mode restricts access to commands registered with `isCheat = true`. It is 
 ## Customization
 
 To change the look, add child nodes to the `TextEdit` node in the scene — similar to the two background `Label` nodes already present.
-
-(currently only works correctly on windows, and maybe mac, linux is broken though)
