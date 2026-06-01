@@ -227,6 +227,14 @@ func cleanText(text: String): # cleanes our text from all the icky symbols creat
 	cleaned = cleaned.replace(\"î\", \"i\").replace(\"Î\", \"I\")
 	cleaned = cleaned.replace(\"ô\", \"o\").replace(\"Ô\", \"O\")
 	cleaned = cleaned.replace(\"û\", \"u\").replace(\"Û\", \"U\")
+	cleaned = cleaned.replace(\"ŵ\", \"w\").replace(\"Ŵ\", \"W\")
+	cleaned = cleaned.replace(\"ẑ\", \"z\").replace(\"Ẑ\", \"Z\")
+	cleaned = cleaned.replace(\"ĵ\", \"j\").replace(\"Ĵ\", \"J\")
+	cleaned = cleaned.replace(\"ĥ\", \"h\").replace(\"Ĥ\", \"H\")
+	cleaned = cleaned.replace(\"ĝ\", \"ĝ\").replace(\"Ĝ\", \"G\")
+	cleaned = cleaned.replace(\"ŝ\", \"s\").replace(\"Ŝ\", \"S\")
+	cleaned = cleaned.replace(\"ŷ\", \"y\").replace(\"Ŷ\", \"Y\")
+	cleaned = cleaned.replace(\"ĉ\", \"c\").replace(\"Ĉ\", \"C\")
 	cleaned = cleaned.replace(\"^\",\"\")
 	return cleaned
 
