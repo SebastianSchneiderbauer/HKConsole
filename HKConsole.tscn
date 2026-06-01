@@ -268,7 +268,10 @@ func executeCommand(command: String):
 	
 	# Call with parameters (for now, callback receives no args)
 	# In the future you can pass parameters: callback.call(parameters)
-	callback.call(parameters)
+	if callback.get_argument_count() == 0: # old case, has no params set up, we ignore it and skip parameters
+		callback.call()
+	else:
+		callback.call(parameters)
 
 # Built-in commands
 func _cmd_clear() -> void:
