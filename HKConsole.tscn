@@ -27,12 +27,15 @@ var history_draft: String = \"\"  # saves current input when navigation starts
 var cheatCommands: Array = []
 
 var previous_text_length: int = 0  # Track text changes for auto-scroll
+var follow_bottom: bool = true  # when true, _process glides the view to the bottom
 
 var starttext = \"\"
 
-func scroll_to_bottom() -> void:
-	\"\"\"Scroll the console to the bottom\"\"\"
-	text_edit.set_v_scroll(99999)  # Set to very high value to ensure bottom
+func scroll_to_bottom(instant: bool = false) -> void:
+	\"\"\"Request the console to follow the bottom; glides there unless instant.\"\"\"
+	follow_bottom = true
+	if instant:
+		text_edit.set_v_scroll(99999)  # snap straight to the bottom
 
 func _ready() -> void:
 	for i in range(lines-2):
@@ -110,11 +113,15 @@ func _on_text_edit_input(event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	# Scroll the console output with the mouse wheel while it's open
 	if !folded and event.is_action_pressed(\"mouseWhUp\"):
+		follow_bottom = false  # scrolling up pauses the auto-follow
 		text_edit.set_v_scroll(text_edit.get_v_scroll() - 1)
 		get_viewport().set_input_as_handled()
 		return
 	if !folded and event.is_action_pressed(\"mouseWhDown\"):
 		text_edit.set_v_scroll(text_edit.get_v_scroll() + 1)
+		var vbar := text_edit.get_v_scroll_bar()
+		if text_edit.get_v_scroll() >= vbar.max_value - vbar.page - 1:
+			follow_bottom = true  # back at the bottom, resume following
 		get_viewport().set_input_as_handled()
 		return
 	# Check for tilda input action to toggle console
@@ -131,7 +138,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			var last_column: int = text_edit.get_line(last_line).length()
 			text_edit.set_caret_line(last_line)
 			text_edit.set_caret_column(last_column)
-			scroll_to_bottom()  # Scroll to bottom when opening console
+			scroll_to_bottom(true)  # snap to bottom when opening console
 		get_viewport().set_input_as_handled()
 
 func handle_enter() -> void:
@@ -187,11 +194,13 @@ func _process(delta: float) -> void:
 	if processing_enter:
 		return
 
-	# Auto-scroll to bottom when user types (text length changes)
-	var current_text_length = text_edit.text.length()
-	if current_text_length != previous_text_length:
-		scroll_to_bottom()
-		previous_text_length = current_text_length
+	# Smoothly glide the view toward the bottom while following
+	if follow_bottom:
+		var vbar := text_edit.get_v_scroll_bar()
+		var target: float = vbar.max_value - vbar.page
+		var current: float = text_edit.get_v_scroll()
+		if current < target:
+			text_edit.set_v_scroll(current + (target - current) * (1.0 - pow(0.7, delta * 60.0)))
 
 	# clean text
 	var cleanedText = _cleanText(text_edit.text)
@@ -285,7 +294,7 @@ func _cmd_clear() -> void:
 	var last_column: int = text_edit.get_line(last_line).length()
 	text_edit.set_caret_line(last_line)
 	text_edit.set_caret_column(last_column)
-	scroll_to_bottom()
+	scroll_to_bottom(true)
 func _cmd_list(params: Array) -> void:
 	if not checkParameters(params, [], [\"-all\"]):
 		log_error(\"the parameters for this function are faulty\")
@@ -329,7 +338,6 @@ func _on_timer_timeout() -> void: # for popping theme message pool
 		var message = messageStack.pop_front()
 		
 		text_edit.set_line(text_edit.get_line_count() - 1, \"    \" + message + \"\\n\")
-		scroll_to_bottom()
 "
 
 [sub_resource type="Resource" id="Resource_q3fvu"]
