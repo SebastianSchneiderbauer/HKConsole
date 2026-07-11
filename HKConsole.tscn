@@ -26,6 +26,10 @@ var history_draft: String = \"\"  # saves current input when navigation starts
 @export var cheatMode: bool = false
 var cheatCommands: Array = []
 
+# colors for normal and cheatmode, can be the same too
+@export var normalColor: Color = Color.WHITE
+@export var cheatColor: Color = Color.PALE_GREEN
+
 var previous_text_length: int = 0  # Track text changes for auto-scroll
 var follow_bottom: bool = true  # when true, _process glides the view to the bottom
 
@@ -55,7 +59,6 @@ func _ready() -> void:
 		register_command(cheatConfig.cheatActivationString, _enableCheats, true)
 
 func register_command(command_name: String, callback: Callable, secret: bool, isCheat: bool = false) -> void:
-	
 	\"\"\"Register a new console command with a callback function\"\"\"
 	if commands.has(command_name):
 		push_warning(\"Overwriting existing command: '%s'\" % command_name)
@@ -313,8 +316,10 @@ func _enableCheats() -> void:
 	
 	var textInput : String
 	if cheatMode:
+		$VBoxContainer/TextEdit.add_theme_color_override(\"font_color\", cheatColor)
 		textInput = cheatConfig.onActivateString
 	else:
+		$VBoxContainer/TextEdit.add_theme_color_override(\"font_color\", normalColor)
 		textInput = cheatConfig.onDeactivateString
 	
 	for part in textInput.split(cheatConfig.splitSymbol):
@@ -613,6 +618,7 @@ custom_minimum_size = Vector2(0, 300)
 layout_mode = 2
 mouse_filter = 1
 theme = SubResource("Theme_uow6b")
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 text = "
 
 
@@ -637,7 +643,7 @@ editor_description = "to customize the look, simply add children to the TextEdit
 libraries/ = SubResource("AnimationLibrary_bj2bn")
 
 [node name="Timer" type="Timer" parent="." unique_id=32607449]
-wait_time = 0.030000000000000002
+wait_time = 0.03
 autostart = true
 ignore_time_scale = true
 
