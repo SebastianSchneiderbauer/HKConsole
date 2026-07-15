@@ -16,7 +16,9 @@ var processing_enter: bool = false  # Flag to prevent race conditions
 @export var lines : int = 15
 const pixelsPerLine : int = 30
 
-const version : String = \"v3.2.0\"
+const version : String = \"v3.3.0\"
+
+const PROMPT_LENGTH : int = 12 # length of \" HKConsole> \", i.e. the first editable column
 
 var command_history: Array[String] = []
 var history_index: int = -1  # -1 = not navigating
@@ -110,6 +112,17 @@ func _on_text_edit_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_DOWN:
 			_history_down()
 			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_LEFT:
+			# Block moving left once we're at the start of the command (into the prompt)
+			var last_line: int = text_edit.get_line_count() - 1
+			if text_edit.get_caret_line() == last_line and text_edit.get_caret_column() <= PROMPT_LENGTH:
+				get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_HOME:
+			# Home jumps to the start of the command, not into the prompt
+			var last_line: int = text_edit.get_line_count() - 1
+			if text_edit.get_caret_line() == last_line:
+				text_edit.set_caret_column(PROMPT_LENGTH)
+				get_viewport().set_input_as_handled()
 	elif event is InputEventKey and not event.pressed and event.keycode == KEY_ENTER:
 		processing_enter = false
 		get_viewport().set_input_as_handled()
@@ -148,7 +161,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func handle_enter() -> void:
 	var current_line: int = text_edit.get_caret_line()
 	var line_text: String = text_edit.get_line(current_line)
-	var clean_command = line_text.substr(11) # shave off \" HKConsole> \" part
+	var clean_command = line_text.substr(PROMPT_LENGTH) # shave off \" HKConsole> \" part
 	
 	text_edit.insert_text_at_caret(\"\\n| > \")
 	scroll_to_bottom()  # Scroll to bottom when command is entered
@@ -172,7 +185,7 @@ func _history_up() -> void:
 		return
 	var last_line = text_edit.get_line_count() - 1
 	if history_index == -1:
-		history_draft = text_edit.get_line(last_line).substr(19)
+		history_draft = text_edit.get_line(last_line).substr(PROMPT_LENGTH)
 		history_index = command_history.size() - 1
 	elif history_index > 0:
 		history_index -= 1
@@ -190,7 +203,7 @@ func _history_down() -> void:
 
 func _set_history_line(cmd: String) -> void:
 	var last_line = text_edit.get_line_count() - 1
-	text_edit.set_line(last_line, \" HKConsole> \" + cmd)
+	text_edit.set_line(last_line, \" HKConsole>\" + cmd)
 	text_edit.set_caret_line(last_line)
 	text_edit.set_caret_column(text_edit.get_line(last_line).length())
 
