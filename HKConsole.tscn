@@ -18,7 +18,7 @@ var processing_enter: bool = false  # Flag to prevent race conditions
 @export var lines : int = 15
 const pixelsPerLine : int = 30
 
-const version : String = \"v3.3.0\"
+const version : String = \"v3.5.0\"
 
 const PROMPT_LENGTH : int = 12 # length of \" HKConsole> \", i.e. the first editable column
 
