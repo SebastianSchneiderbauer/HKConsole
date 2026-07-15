@@ -205,7 +205,7 @@ func _history_down() -> void:
 
 func _set_history_line(cmd: String) -> void:
 	var last_line = text_edit.get_line_count() - 1
-	text_edit.set_line(last_line, \" HKConsole>\" + cmd)
+	text_edit.set_line(last_line, \" HKConsole> \" + cmd)
 	text_edit.set_caret_line(last_line)
 	text_edit.set_caret_column(text_edit.get_line(last_line).length())
 
@@ -672,13 +672,7 @@ pivot_offset = Vector2(576, 0)
 size_flags_vertical = 0
 mouse_filter = 2
 script = SubResource("GDScript_6xx6t")
-folded = null
-commandSplitSymbol = null
-lines = null
-max_history = null
 cheatConfig = SubResource("Resource_q3fvu")
-cheatMode = null
-normalColor = null
 cheatColor = Color(1, 0, 0, 1)
 ypos = -900.0
 
