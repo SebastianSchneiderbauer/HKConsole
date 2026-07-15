@@ -7,8 +7,10 @@ script/source = "extends Control
 
 var commands: Dictionary = {}
 var secretCommands: Array = [] # here we store the name of secret commands, meaning they wont show in the list command
-const art = \"                      .__...__.\\n                    .-\\\"      \\\"-.^\\n                   /           \\\\\\n                   |            |\\n                   |,  .-.   .-.  ,|      made by\\n                   | )(_o/-\\\\o_)( |      HerrKleiderbauer\\n                   |/    ./\\\\.    \\\\|\\n       (@_         (_         _)\\n       .) \\\\________\\\\__|IIII|__/___________________________\\n (#)8888{#}________|-\\\\IIII/-|_____ HKConsole \" + version + \" ______/\\n       .) /           \\\\       /\\n       (@            `------`\\n\"
-const linestart = art + \"\\n \"
+const artNormal = \"                      .__...__.\\n                    .-\\\"      \\\"-.^\\n                   /           \\\\\\n                   |            |\\n                   |,  .-.   .-.  ,|      made by\\n                   | )(__/-\\\\__)( |      HerrKleiderbauer\\n                   |/    ./\\\\.    \\\\|\\n       (@_         (_         _)\\n       .) \\\\________\\\\__|IIII|__/___________________________\\n (#)8888{#}________|-\\\\IIII/-|_____ HKConsole \" + version + \" ______/\\n       .) /           \\\\       /\\n       (@            `------`\\n\"
+const artCheat = \"                      .__...__.\\n                    .-\\\"      \\\"-.^\\n                   /           \\\\\\n                   |            |\\n                   |,  .-.   .-.  ,|      made by\\n                   | )(_o/-\\\\o_)( |      HerrKleiderbauer\\n                   |/    ./\\\\.    \\\\|\\n       (@_         (_         _)\\n       .) \\\\________\\\\__|IIII|__/___________________________\\n (#)8888{#}________|-\\\\IIII/-|_____ HKConsole \" + version + \" ______/\\n       .) /           \\\\       /\\n       (@            `------`\\n\"
+func getLinestart() -> String:
+	return (artCheat if cheatMode else artNormal) + \"\\n \"
 @onready var text_edit: TextEdit = $VBoxContainer/TextEdit
 var processing_enter: bool = false  # Flag to prevent race conditions
 @export var folded: bool = true # console starts folded in
@@ -47,7 +49,7 @@ func scroll_to_bottom(instant: bool = false) -> void:
 func _ready() -> void:
 	for i in range(lines-2):
 		starttext += \" \\n\"
-	text_edit.text = starttext + linestart
+	text_edit.text = starttext + getLinestart()
 	previous_text_length = text_edit.text.length()  # Initialize text length tracker
 	$VBoxContainer/TextEdit.custom_minimum_size.y = pixelsPerLine * lines
 
@@ -305,7 +307,7 @@ func executeCommand(command: String):
 
 # Built-in commands
 func _cmd_clear() -> void:
-	text_edit.text = starttext + linestart
+	text_edit.text = starttext + getLinestart()
 	previous_text_length = text_edit.text.length()  # Update text length tracker
 	var last_line: int = text_edit.get_line_count() - 1
 	var last_column: int = text_edit.get_line(last_line).length()
@@ -670,7 +672,13 @@ pivot_offset = Vector2(576, 0)
 size_flags_vertical = 0
 mouse_filter = 2
 script = SubResource("GDScript_6xx6t")
+folded = null
+commandSplitSymbol = null
+lines = null
+max_history = null
 cheatConfig = SubResource("Resource_q3fvu")
+cheatMode = null
+normalColor = null
 cheatColor = Color(1, 0, 0, 1)
 ypos = -900.0
 
