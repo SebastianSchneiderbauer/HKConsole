@@ -1,9 +1,7 @@
 # HKConsole
 
 A lightweight in-game developer console for Godot 4. Toggle it open with `^`, type commands, and extend it with your own callbacks at runtime. 
-
----
-
+<img src="https://github.com/user-attachments/assets/98ede130-c703-4ffe-bb83-d2d22ab9c3e9" alt="Description" width="100%">
 ## Setup
 
 1. **Add the scene** — Place `HKConsoleUI.tscn` somewhere in your project (e.g. `res://tools/HKConsole/`).
