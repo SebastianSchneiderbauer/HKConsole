@@ -133,3 +133,4 @@ Cheat mode restricts access to commands registered with `isCheat = true`. It is 
 ## Customization
 
 To change the look, add child nodes to the `TextEdit` node in the scene — similar to the two background `Label` nodes already present.
+This will however most likely completely fuck up scaling wise, so maybe just dont, you still get to update the splashtext, you dont have to keep the default ofc.
