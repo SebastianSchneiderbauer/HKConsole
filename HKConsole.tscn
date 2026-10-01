@@ -58,6 +58,7 @@ func _ready() -> void:
 	register_command(\"list\",_cmd_list, false)
 	register_command(\"clear\",_cmd_clear, false)
 	register_command(\"exit\",_cmd_exit, false)
+	register_command(\"e\",_cmd_exit, false)
 	
 	# register cheat en/dis-able command, if we have a cheatConfig
 	if cheatConfig != null:
@@ -390,7 +391,9 @@ data = PackedByteArray("AAEAAAAOAIAAAwBgRkZUTWN7/rcAAIXgAAAAHEdERUYADwAeAACFwAAA
 font_name = "m5x7"
 style_name = "Medium"
 font_weight = 500
+subpixel_positioning = 0
 msdf_pixel_range = 8
+msdf_size = 128
 cache/0/variation_coordinates = {}
 cache/0/face_index = 0
 cache/0/embolden = 0.0
