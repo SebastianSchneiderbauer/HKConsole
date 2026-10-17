@@ -19,7 +19,7 @@ var processing_enter: bool = false  # Flag to prevent race conditions
 @export var lines : int = 15
 const pixelsPerLine : int = 30
 
-const version : String = \"v5.0.0\"
+const version : String = \"v6.0.0\"
 
 const PROMPT_LENGTH : int = 12 # length of \" HKConsole> \", i.e. the first editable column
 
@@ -31,6 +31,7 @@ var history_draft: String = \"\"  # saves current input when navigation starts
 @export var cheatConfig: HKConsoleCheatConfig
 @export var cheatMode: bool = false
 var cheatCommands: Array = []
+var descriptions: Dictionary = {} # command name -> text shown by \"help <command>\"
 
 # alias name -> command with optional parameters, persisted as plaintext \"<command> [params]; <alias>\" lines so configs can be copy-pasted
 const ALIAS_PATH : String = \"user://hkconsole_aliases.txt\"
@@ -65,25 +66,27 @@ func _ready() -> void:
 
 	text_edit.gui_input.connect(_on_text_edit_input)
 
-	register_command(\"list\",_cmd_list, false)
-	register_command(\"clear\",_cmd_clear, false)
-	register_command(\"exit\",_cmd_exit, false)
-	register_command(\"alias\",_register_alias, false)
-	register_command(\"unalias\",_cmd_unalias, false)
-	register_command(\"chain\",_cmd_chain, false)
-	register_command(\"unchain\",_cmd_unchain, false)
+	register_command(\"list\", \"lists all available commands\\nPARAMETERS:\\n  \\\"-all\\\": shows hidden commands too, as well as cheat commands\\n  \\\"aliases\\\": shows all active aliases\\n  \\\"chains\\\": shows all active chains\", _cmd_list, false)
+	register_command(\"clear\", \"clears the HKconsole\", _cmd_clear, false)
+	register_command(\"exit\", \"closes the HKconsole\", _cmd_exit, false)
+	register_command(\"help\", \"gives you a description of what a command does\\nPARAMETERS:\\n  \\\"{command_name}\\\": outputs that commands description\", _cmd_help, false)
+	register_command(\"alias\", \"lets you create aliases for commands or chains that persist on the disk\\nUSAGE:\\n  alias {command_without_parameters} {alias_name}\\n  alias {command_with_parameters}; {alias_name}\", _register_alias, false)
+	register_command(\"unalias\", \"removes an alias\\nPARAMETERS:\\n  \\\"{alias_name}\\\": removes said alias\\n  \\\"-all\\\": removes all your aliases\", _cmd_unalias, false)
+	register_command(\"chain\", \"lets you chain multiple commands with parameters together. This persists on the disk\\nUSAGE:\\n  chain {chain_name} {command_1}; {command_2}; ... {final_command}\", _cmd_chain, false)
+	register_command(\"unchain\", \"removes a chain\\nPARAMETERS:\\n  \\\"{chain_name}\\\": removes said chain\\n  \\\"-all\\\": removes all your chains\", _cmd_unchain, false)
 
 	# register cheat en/dis-able command, if we have a cheatConfig
 	if cheatConfig != null:
-		register_command(cheatConfig.cheatActivationString, _enableCheats, true)
+		register_command(cheatConfig.cheatActivationString, \"try it out ;)\", _enableCheats, true)
 
 	_load_aliases() # after built-ins, so saved aliases cant shadow them
 	_load_chains() # after aliases, so name clashes resolve the same way every launch
 
-func register_command(command_name: String, callback: Callable, secret: bool, isCheat: bool = false) -> void:
-	\"\"\"Register a new console command with a callback function\"\"\"
+func register_command(command_name: String, description: String, callback: Callable, secret: bool, isCheat: bool = false) -> void:
+	\"\"\"Register a new console command with a callback function, description is shown by help\"\"\"
 	if commands.has(command_name):
 		push_warning(\"Overwriting existing command: '%s'\" % command_name)
+	descriptions[command_name] = description
 	if aliases.has(command_name):
 		log_warning(\"command '%s' shadows your alias of the same name, unalias it\" % command_name)
 	if chains.has(command_name):
@@ -108,6 +111,7 @@ func unregister_command(command_name: String) -> void:
 	
 	secretCommands.erase(command_name)
 	cheatCommands.erase(command_name)
+	descriptions.erase(command_name)
 
 var messageStack = []
 func logInfo(message: String) -> void:
@@ -367,6 +371,32 @@ func _cmd_list(params: Array) -> void:
 	for cmd in commands.keys():
 		if cmd not in secretCommands or params.has(\"-all\"):
 			logInfo(\"  - \" + cmd)
+func _cmd_help(params: Array) -> void:
+	if params.size() > 1:
+		log_error(\"usage: help <command>\")
+		return
+	if params.is_empty():
+		logInfo(\"gives you a description of what a command does\\nPARAMETERS:\\n  \\\"{command_name}\\\": outputs that commands description\")
+		logInfo(\"look into list to see available commands\")
+		return
+
+	var command_name: String = params[0]
+	if not commands.has(command_name) and aliases.has(command_name):
+		logInfo(\"'%s' is an alias for '%s'\" % [command_name, aliases[command_name]])
+		command_name = _command_name(aliases[command_name])
+	if not commands.has(command_name) and chains.has(command_name): # also after alias resolution, aliases can point at chains
+		logInfo(\"'%s' is a chain: %s\" % [command_name, (chainSplitSymbol + \" \").join(chains[command_name])])
+		return
+
+	if not commands.has(command_name):
+		log_error(\"Unknown command: '%s'. Type 'list' for available commands.\" % command_name)
+	elif command_name in cheatCommands and not cheatMode:
+		logInfo(\"[REDACTED] this file is sealed above your clearance level. Whoever told you it exists is in trouble.\")
+	elif descriptions[command_name].strip_edges() == \"\":
+		logInfo(\"no description available for '%s'\" % command_name)
+	else:
+		for line in descriptions[command_name].split(\"\\n\"): # each line gets its own log entry so the console layout holds
+			logInfo(line)
 func _cmd_exit() -> void:
 	folded = true
 	$AnimationPlayer.play(\"in\")
@@ -535,7 +565,7 @@ func _enableCheats() -> void:
 		$VBoxContainer/TextEdit.add_theme_color_override(\"font_color\", normalColor)
 		textInput = cheatConfig.onDeactivateString + \"\\n\"
 	
-	for part in textInput.split(cheatConfig.splitSymbol):
+	for part in textInput.split(\"\\\\n\"):
 		logInfo(part)
 
 # method for functions so you can validate the inputted parameters
@@ -559,6 +589,10 @@ func _on_timer_timeout() -> void: # for popping theme message pool
 
 [sub_resource type="Resource" id="Resource_q3fvu"]
 script = ExtResource("1_34iib")
+onActivateString = "CHEATS ARE ACTIVATED
+    this is persistent (excluding a restart), to deactivate run command again"
+onDeactivateString = "CHEATS ARE DEACTIVATED
+    this is persistent (excluding a restart), to reactivate run command again"
 metadata/_custom_type_script = "uid://bs0afo0432gqo"
 
 [sub_resource type="Image" id="Image_fvg5d"]

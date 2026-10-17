@@ -32,6 +32,8 @@ A lightweight in-game developer console for Godot 4. Toggle it open with `^`, ty
 | `list -all` | Print all registered commands including secret ones |
 | `list -aliases` | Print all aliases and the command each one calls |
 | `list -chains` | Print all chains and the commands each one runs |
+| `help` | Explain how to use help |
+| `help <command>` | Print the description of a command (or what an alias / chain calls). Cheat commands stay hidden while cheat mode is off |
 | `clear` | Clear the console output |
 | `exit` | Closes the terminal, since closing per `^` does not work on linux rn |
 | `alias <command> [params]; <alias>` | Make `<alias>` call `<command>` with those parameters (e.g. `alias list -aliases; la`). Parameters typed after the alias are appended. Without parameters the `;` is optional (`alias shownav sn`). Saved to `user://hkconsole_aliases.txt`, one `<command> [params]; <alias>` per line, so configs can be copy-pasted. The command doesn't need to exist yet |
@@ -44,12 +46,13 @@ A lightweight in-game developer console for Godot 4. Toggle it open with `^`, ty
 ### Registering Commands
 
 ```gdscript
-HKConsole.register_command(command_name: String, callback: Callable, secret: bool, isCheat: bool = false)
+HKConsole.register_command(command_name: String, description: String, callback: Callable, secret: bool, isCheat: bool = false)
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `command_name` | `String` | The string the user types to invoke the command |
+| `description` | `String` | Shown by `help <command_name>`, tell the player what it does and how to use it. Use `\n` for line breaks |
 | `callback` | `Callable` | The function to call when the command is executed |
 | `secret` | `bool` | If `true`, the command is hidden from `list` (still visible via `list -all`) |
 | `isCheat` | `bool` | If `true`, the command can only be executed while cheat mode is active |
@@ -73,13 +76,13 @@ HKConsole.checkParameters(params: Array, needed: Array, allowed: Array) -> bool
 
 ```gdscript
 # Command that takes no console parameters — NO function argument
-HKConsole.register_command("my_command", _my_callback, false)
+HKConsole.register_command("my_command", "says hello", _my_callback, false)
 
 func _my_callback() -> void:
 	HKConsole.logInfo("Hello from my_command!")
 
 # Command with an optional flag — e.g. "status -v"
-HKConsole.register_command("status", _cmd_status, false)
+HKConsole.register_command("status", "prints the status. usage: status [-v]", _cmd_status, false)
 
 func _cmd_status(params: Array) -> void:
 	if not HKConsole.checkParameters(params, [], ["-v"]):
@@ -90,10 +93,10 @@ func _cmd_status(params: Array) -> void:
 		HKConsole.logInfo("verbose details here...")
 
 # Secret command — hidden from list, visible via list -all
-HKConsole.register_command("my_debug_cmd", _my_debug, true)
+HKConsole.register_command("my_debug_cmd", "debug stuff", _my_debug, true)
 
 # Cheat command — only executable when cheat mode is active
-HKConsole.register_command("god_mode", _god_mode, false, true)
+HKConsole.register_command("god_mode", "makes you invincible", _god_mode, false, true)
 ```
 
 ### Logging
@@ -132,9 +135,8 @@ Cheat mode restricts access to commands registered with `isCheat = true`. It is 
 | Property | Default | Description |
 |----------|---------|-------------|
 | `cheatActivationString` | `"IDKFA"` | The command that toggles cheat mode on/off |
-| `splitSymbol` | `"\|"` | Separator used to split the activation/deactivation messages into multiple lines |
-| `onActivateString` | `"CHEATS ARE ACTIVATED\|..."` | Message printed when cheats are activated (split by `splitSymbol`) |
-| `onDeactivateString` | `"CHEATS ARE DEACTIVATED\|..."` | Message printed when cheats are deactivated (split by `splitSymbol`) |
+| `onActivateString` | `"CHEATS ARE ACTIVATED\n..."` | Message printed when cheats are activated, each line (`\n`) is logged separately |
+| `onDeactivateString` | `"CHEATS ARE DEACTIVATED\n..."` | Message printed when cheats are deactivated, each line (`\n`) is logged separately |
 
 ---
 
