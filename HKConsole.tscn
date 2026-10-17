@@ -18,7 +18,7 @@ var processing_enter: bool = false  # Flag to prevent race conditions
 @export var lines : int = 15
 const pixelsPerLine : int = 30
 
-const version : String = \"v3.5.0\"
+const version : String = \"v4.0.0\"
 
 const PROMPT_LENGTH : int = 12 # length of \" HKConsole> \", i.e. the first editable column
 
@@ -30,6 +30,10 @@ var history_draft: String = \"\"  # saves current input when navigation starts
 @export var cheatConfig: HKConsoleCheatConfig
 @export var cheatMode: bool = false
 var cheatCommands: Array = []
+
+# alias name -> command name, persisted as plaintext \"<command> <alias>\" lines so configs can be copy-pasted
+const ALIAS_PATH : String = \"user://hkconsole_aliases.txt\"
+var aliases: Dictionary = {}
 
 # colors for normal and cheatmode, can be the same too
 @export var normalColor: Color = Color.WHITE
@@ -58,17 +62,22 @@ func _ready() -> void:
 	register_command(\"list\",_cmd_list, false)
 	register_command(\"clear\",_cmd_clear, false)
 	register_command(\"exit\",_cmd_exit, false)
-	register_command(\"e\",_cmd_exit, false)
-	
+	register_command(\"alias\",_register_alias, false)
+	register_command(\"unalias\",_cmd_unalias, false)
+
 	# register cheat en/dis-able command, if we have a cheatConfig
 	if cheatConfig != null:
 		register_command(cheatConfig.cheatActivationString, _enableCheats, true)
+
+	_load_aliases() # after built-ins, so saved aliases cant shadow them
 
 func register_command(command_name: String, callback: Callable, secret: bool, isCheat: bool = false) -> void:
 	\"\"\"Register a new console command with a callback function\"\"\"
 	if commands.has(command_name):
 		push_warning(\"Overwriting existing command: '%s'\" % command_name)
-	
+	if aliases.has(command_name):
+		log_warning(\"command '%s' shadows your alias of the same name, unalias it\" % command_name)
+
 	commands[command_name] = callback
 	
 	if secret:
@@ -276,17 +285,22 @@ func _cleanText(text: String) -> String:
 
 func executeCommand(command: String):
 	var splitString = command.split(commandSplitSymbol, false)
-	
-	if command in cheatCommands and not cheatMode:
-		log_error(\"missing permissions, enable cheats and try again\")
-		return
-	
+
 	if splitString.is_empty():
 		return
-	
+
 	var operation: String = splitString[0]
 	var parameters: Array = splitString.slice(1)
-	
+
+	# real commands always win over aliases
+	if not commands.has(operation) and aliases.has(operation):
+		operation = aliases[operation]
+
+	# checked on the resolved name, so neither aliases nor parameters bypass it
+	if operation in cheatCommands and not cheatMode:
+		log_error(\"missing permissions, enable cheats and try again\")
+		return
+
 	# Check if command exists
 	if not commands.has(operation):
 		log_error(\"Unknown command: '%s'. Type 'list' for available commands.\" % operation)
@@ -316,10 +330,16 @@ func _cmd_clear() -> void:
 	text_edit.set_caret_column(last_column)
 	scroll_to_bottom(true)
 func _cmd_list(params: Array) -> void:
-	if not checkParameters(params, [], [\"-all\"]):
+	if not checkParameters(params, [], [\"-all\", \"-aliases\"]):
 		log_error(\"the parameters for this function are faulty\")
 		return
-	
+
+	if params.has(\"-aliases\"):
+		logInfo(\"Aliases:\" if not aliases.is_empty() else \"No aliases set\")
+		for alias in aliases:
+			logInfo(\"  - %s -> %s\" % [alias, aliases[alias]])
+		return
+
 	logInfo(\"Available commands:\")
 	for cmd in commands.keys():
 		if cmd not in secretCommands or params.has(\"-all\"):
@@ -328,6 +348,68 @@ func _cmd_exit() -> void:
 	folded = true
 	$AnimationPlayer.play(\"in\")
 	text_edit.release_focus()
+func _register_alias(params: Array) -> void:
+	if params.size() != 2:
+		log_error(\"usage: alias <command> <alias>\")
+		return
+	if _add_alias(params[0], params[1]):
+		_save_aliases()
+		logInfo(\"'%s' now calls '%s'\" % [params[1], params[0]])
+func _cmd_unalias(params: Array) -> void:
+	if params.size() != 1:
+		log_error(\"usage: unalias <alias> | unalias -all\")
+		return
+	if params[0] == \"-all\":
+		aliases.clear()
+		logInfo(\"removed all aliases\")
+	elif aliases.erase(params[0]):
+		logInfo(\"removed alias '%s'\" % params[0])
+	else:
+		log_error(\"alias '%s' not found\" % params[0])
+		return
+	_save_aliases()
+
+# target may not exist yet (e.g. player commands while in the main menu), so it is not checked
+func _add_alias(target: String, alias: String) -> bool:
+	if commands.has(alias):
+		log_error(\"'%s' is already a command\" % alias)
+	elif aliases.has(alias):
+		log_error(\"alias '%s' already exists, unalias it first\" % alias)
+	elif alias.begins_with(\"-\"):
+		log_error(\"aliases cannot start with '-', that is reserved for flags like -all\")
+	elif alias == target:
+		log_error(\"cannot alias '%s' to itself\" % alias)
+	elif aliases.has(target):
+		log_error(\"'%s' is an alias, bind to the command itself\" % target)
+	elif alias in aliases.values():
+		log_error(\"'%s' is the target of another alias\" % alias)
+	else:
+		aliases[alias] = target
+		return true
+	return false
+func _save_aliases() -> void:
+	var file := FileAccess.open(ALIAS_PATH, FileAccess.WRITE)
+	if file == null:
+		log_error(\"could not save aliases: %s\" % error_string(FileAccess.get_open_error()))
+		return
+	for alias in aliases:
+		file.store_line(aliases[alias] + commandSplitSymbol + alias)
+func _load_aliases() -> void:
+	if not FileAccess.file_exists(ALIAS_PATH):
+		return
+	var file := FileAccess.open(ALIAS_PATH, FileAccess.READ)
+	if file == null:
+		log_error(\"could not load aliases: %s\" % error_string(FileAccess.get_open_error()))
+		return
+	while not file.eof_reached():
+		var line := file.get_line().strip_edges() # strip_edges eats \\r from pasted windows configs
+		var parts := line.split(commandSplitSymbol, false)
+		if parts.is_empty():
+			continue
+		if parts.size() != 2:
+			log_warning(\"skipping malformed alias line: '%s'\" % line)
+			continue
+		_add_alias(parts[0], parts[1]) # same checks as typed aliases, logs if rejected
 func _enableCheats() -> void:
 	cheatMode = !cheatMode
 	
@@ -355,7 +437,6 @@ func checkParameters(parameters: Array, needed: Array, allowed: Array) -> bool:
 			return false
 	
 	return true
-
 
 func _on_timer_timeout() -> void: # for popping theme message pool
 	if not messageStack.is_empty():

@@ -30,8 +30,12 @@ A lightweight in-game developer console for Godot 4. Toggle it open with `^`, ty
 | `Enter` | Execute the typed command |
 | `list` | Print all registered (non-secret) commands |
 | `list -all` | Print all registered commands including secret ones |
+| `list -aliases` | Print all aliases and the command each one calls |
 | `clear` | Clear the console output |
 | `exit` | Closes the terminal, since closing per `^` does not work on linux rn |
+| `alias <command> <alias>` | Make `<alias>` call `<command>` (e.g. `alias shownav sn`). Saved to `user://hkconsole_aliases.txt`, one `<command> <alias>` per line, so configs can be copy-pasted. The command doesn't need to exist yet |
+| `unalias <alias>` | Remove one alias |
+| `unalias -all` | Remove all aliases |
 
 ### Registering Commands
 
