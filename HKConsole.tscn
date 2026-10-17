@@ -15,10 +15,11 @@ func getLinestart() -> String:
 var processing_enter: bool = false  # Flag to prevent race conditions
 @export var folded: bool = true # console starts folded in
 @export var commandSplitSymbol: String = \" \"
+@export var chainSplitSymbol: String = \";\" # separates the steps of a chain, so steps can carry parameters
 @export var lines : int = 15
 const pixelsPerLine : int = 30
 
-const version : String = \"v4.0.0\"
+const version : String = \"v5.0.0\"
 
 const PROMPT_LENGTH : int = 12 # length of \" HKConsole> \", i.e. the first editable column
 
@@ -31,9 +32,14 @@ var history_draft: String = \"\"  # saves current input when navigation starts
 @export var cheatMode: bool = false
 var cheatCommands: Array = []
 
-# alias name -> command name, persisted as plaintext \"<command> <alias>\" lines so configs can be copy-pasted
+# alias name -> command with optional parameters, persisted as plaintext \"<command> [params]; <alias>\" lines so configs can be copy-pasted
 const ALIAS_PATH : String = \"user://hkconsole_aliases.txt\"
 var aliases: Dictionary = {}
+
+# chain name -> PackedStringArray of steps (each a full command with parameters), persisted as \"<name> <step>; <step>...\" lines
+const CHAIN_PATH : String = \"user://hkconsole_chains.txt\"
+var chains: Dictionary = {}
+var running_chains: Array = [] # guards against chains that end up calling themselves
 
 # colors for normal and cheatmode, can be the same too
 @export var normalColor: Color = Color.WHITE
@@ -64,12 +70,15 @@ func _ready() -> void:
 	register_command(\"exit\",_cmd_exit, false)
 	register_command(\"alias\",_register_alias, false)
 	register_command(\"unalias\",_cmd_unalias, false)
+	register_command(\"chain\",_cmd_chain, false)
+	register_command(\"unchain\",_cmd_unchain, false)
 
 	# register cheat en/dis-able command, if we have a cheatConfig
 	if cheatConfig != null:
 		register_command(cheatConfig.cheatActivationString, _enableCheats, true)
 
 	_load_aliases() # after built-ins, so saved aliases cant shadow them
+	_load_chains() # after aliases, so name clashes resolve the same way every launch
 
 func register_command(command_name: String, callback: Callable, secret: bool, isCheat: bool = false) -> void:
 	\"\"\"Register a new console command with a callback function\"\"\"
@@ -77,6 +86,8 @@ func register_command(command_name: String, callback: Callable, secret: bool, is
 		push_warning(\"Overwriting existing command: '%s'\" % command_name)
 	if aliases.has(command_name):
 		log_warning(\"command '%s' shadows your alias of the same name, unalias it\" % command_name)
+	if chains.has(command_name):
+		log_warning(\"command '%s' shadows your chain of the same name, unchain it\" % command_name)
 
 	commands[command_name] = callback
 	
@@ -292,9 +303,15 @@ func executeCommand(command: String):
 	var operation: String = splitString[0]
 	var parameters: Array = splitString.slice(1)
 
-	# real commands always win over aliases
+	# real commands win over aliases, aliases over chains
 	if not commands.has(operation) and aliases.has(operation):
-		operation = aliases[operation]
+		var target: PackedStringArray = aliases[operation].split(commandSplitSymbol, false)
+		operation = target[0]
+		parameters = Array(target.slice(1)) + parameters # stored params first, typed ones appended
+
+	if not commands.has(operation) and chains.has(operation):
+		_run_chain(operation, parameters)
+		return
 
 	# checked on the resolved name, so neither aliases nor parameters bypass it
 	if operation in cheatCommands and not cheatMode:
@@ -330,7 +347,7 @@ func _cmd_clear() -> void:
 	text_edit.set_caret_column(last_column)
 	scroll_to_bottom(true)
 func _cmd_list(params: Array) -> void:
-	if not checkParameters(params, [], [\"-all\", \"-aliases\"]):
+	if not checkParameters(params, [], [\"-all\", \"-aliases\", \"-chains\"]):
 		log_error(\"the parameters for this function are faulty\")
 		return
 
@@ -338,6 +355,12 @@ func _cmd_list(params: Array) -> void:
 		logInfo(\"Aliases:\" if not aliases.is_empty() else \"No aliases set\")
 		for alias in aliases:
 			logInfo(\"  - %s -> %s\" % [alias, aliases[alias]])
+		return
+
+	if params.has(\"-chains\"):
+		logInfo(\"Chains:\" if not chains.is_empty() else \"No chains set\")
+		for chain_name in chains:
+			logInfo(\"  - %s -> %s\" % [chain_name, (chainSplitSymbol + \" \").join(chains[chain_name])])
 		return
 
 	logInfo(\"Available commands:\")
@@ -349,12 +372,13 @@ func _cmd_exit() -> void:
 	$AnimationPlayer.play(\"in\")
 	text_edit.release_focus()
 func _register_alias(params: Array) -> void:
-	if params.size() != 2:
-		log_error(\"usage: alias <command> <alias>\")
+	var parts := _parse_alias(params)
+	if parts.is_empty():
+		log_error(\"usage: alias <command> [params]%s <alias>\" % chainSplitSymbol)
 		return
-	if _add_alias(params[0], params[1]):
+	if _add_alias(parts[0], parts[1]):
 		_save_aliases()
-		logInfo(\"'%s' now calls '%s'\" % [params[1], params[0]])
+		logInfo(\"'%s' now calls '%s'\" % [parts[1], parts[0]])
 func _cmd_unalias(params: Array) -> void:
 	if params.size() != 1:
 		log_error(\"usage: unalias <alias> | unalias -all\")
@@ -371,45 +395,133 @@ func _cmd_unalias(params: Array) -> void:
 
 # target may not exist yet (e.g. player commands while in the main menu), so it is not checked
 func _add_alias(target: String, alias: String) -> bool:
+	var target_op := _command_name(target)
 	if commands.has(alias):
 		log_error(\"'%s' is already a command\" % alias)
 	elif aliases.has(alias):
 		log_error(\"alias '%s' already exists, unalias it first\" % alias)
+	elif chains.has(alias):
+		log_error(\"'%s' is already a chain\" % alias)
 	elif alias.begins_with(\"-\"):
 		log_error(\"aliases cannot start with '-', that is reserved for flags like -all\")
-	elif alias == target:
+	elif alias == target_op:
 		log_error(\"cannot alias '%s' to itself\" % alias)
-	elif aliases.has(target):
-		log_error(\"'%s' is an alias, bind to the command itself\" % target)
-	elif alias in aliases.values():
+	elif aliases.has(target_op):
+		log_error(\"'%s' is an alias, bind to the command itself\" % target_op)
+	elif aliases.values().any(func(t): return _command_name(t) == alias):
 		log_error(\"'%s' is the target of another alias\" % alias)
 	else:
 		aliases[alias] = target
 		return true
 	return false
 func _save_aliases() -> void:
-	var file := FileAccess.open(ALIAS_PATH, FileAccess.WRITE)
-	if file == null:
-		log_error(\"could not save aliases: %s\" % error_string(FileAccess.get_open_error()))
-		return
-	for alias in aliases:
-		file.store_line(aliases[alias] + commandSplitSymbol + alias)
+	_save_lines(ALIAS_PATH, aliases.keys().map(func(alias): return aliases[alias] + chainSplitSymbol + \" \" + alias))
 func _load_aliases() -> void:
-	if not FileAccess.file_exists(ALIAS_PATH):
-		return
-	var file := FileAccess.open(ALIAS_PATH, FileAccess.READ)
-	if file == null:
-		log_error(\"could not load aliases: %s\" % error_string(FileAccess.get_open_error()))
-		return
-	while not file.eof_reached():
-		var line := file.get_line().strip_edges() # strip_edges eats \\r from pasted windows configs
-		var parts := line.split(commandSplitSymbol, false)
+	for tokens in _load_lines(ALIAS_PATH):
+		var parts := _parse_alias(tokens)
 		if parts.is_empty():
-			continue
-		if parts.size() != 2:
-			log_warning(\"skipping malformed alias line: '%s'\" % line)
+			log_warning(\"skipping malformed alias line: '%s'\" % commandSplitSymbol.join(tokens))
 			continue
 		_add_alias(parts[0], parts[1]) # same checks as typed aliases, logs if rejected
+# returns [command with params, alias], or empty if malformed
+func _parse_alias(tokens: Array) -> PackedStringArray:
+	var parts := _parse_steps(tokens)
+	if tokens.size() == 2 and not commandSplitSymbol.join(tokens).contains(chainSplitSymbol): # short \"<command> <alias>\" form without the split symbol
+		return PackedStringArray(tokens)
+	if parts.size() != 2 or parts[1].contains(commandSplitSymbol):
+		return PackedStringArray()
+	return parts
+func _command_name(command: String) -> String:
+	var tokens := command.split(commandSplitSymbol, false)
+	return tokens[0] if not tokens.is_empty() else \"\"
+
+func _cmd_chain(params: Array) -> void:
+	var steps := _parse_steps(params.slice(1))
+	if params.is_empty() or steps.is_empty():
+		log_error(\"usage: chain <name> <command> [params]%s <command> [params] ...\" % chainSplitSymbol)
+		return
+	if _add_chain(params[0], steps):
+		_save_chains()
+		logInfo(\"'%s' now calls %s\" % [params[0], (chainSplitSymbol + \" \").join(steps)])
+func _cmd_unchain(params: Array) -> void:
+	if params.size() != 1:
+		log_error(\"usage: unchain <name> | unchain -all\")
+		return
+	if params[0] == \"-all\":
+		chains.clear()
+		logInfo(\"removed all chains\")
+	elif chains.erase(params[0]):
+		logInfo(\"removed chain '%s'\" % params[0])
+	else:
+		log_error(\"chain '%s' not found\" % params[0])
+		return
+	_save_chains()
+
+# steps may not exist yet, like alias targets, so they are not checked; loops are caught when running
+func _add_chain(chain_name: String, steps: PackedStringArray) -> bool:
+	if commands.has(chain_name):
+		log_error(\"'%s' is already a command\" % chain_name)
+	elif aliases.has(chain_name):
+		log_error(\"'%s' is already an alias\" % chain_name)
+	elif chains.has(chain_name):
+		log_error(\"chain '%s' already exists, unchain it first\" % chain_name)
+	elif chain_name.begins_with(\"-\"):
+		log_error(\"chains cannot start with '-', that is reserved for flags like -all\")
+	elif chain_name.contains(chainSplitSymbol):
+		log_error(\"chain names cannot contain '%s', it separates the steps\" % chainSplitSymbol)
+	else:
+		chains[chain_name] = steps
+		return true
+	return false
+func _run_chain(chain_name: String, parameters: Array) -> void:
+	if not parameters.is_empty():
+		log_error(\"chains do not accept parameters\")
+		return
+	if chain_name in running_chains:
+		log_error(\"chain '%s' ends up calling itself, stopping\" % chain_name)
+		return
+	running_chains.push_back(chain_name)
+	for step in chains[chain_name]:
+		executeCommand(step) # a failing step logs its error, the rest still run
+	running_chains.pop_back()
+func _save_chains() -> void:
+	_save_lines(CHAIN_PATH, chains.keys().map(func(chain_name): return chain_name + commandSplitSymbol + (chainSplitSymbol + \" \").join(chains[chain_name])))
+func _load_chains() -> void:
+	for parts in _load_lines(CHAIN_PATH):
+		var steps := _parse_steps(parts.slice(1))
+		if steps.is_empty():
+			log_warning(\"skipping malformed chain line: '%s'\" % commandSplitSymbol.join(parts))
+			continue
+		_add_chain(parts[0], steps) # same checks as typed chains, logs if rejected
+# tokens are already split on commandSplitSymbol, so glue them back and split on chainSplitSymbol instead
+func _parse_steps(tokens: Array) -> PackedStringArray:
+	var steps := PackedStringArray()
+	for step in commandSplitSymbol.join(tokens).split(chainSplitSymbol, false):
+		if step.strip_edges() != \"\":
+			steps.push_back(step.strip_edges())
+	return steps
+
+func _save_lines(path: String, file_lines: Array) -> void:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		log_error(\"could not save %s: %s\" % [path, error_string(FileAccess.get_open_error())])
+		return
+	for line in file_lines:
+		file.store_line(line)
+# returns every non-empty line of the file, split into tokens
+func _load_lines(path: String) -> Array:
+	var result: Array = []
+	if not FileAccess.file_exists(path):
+		return result
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		log_error(\"could not load %s: %s\" % [path, error_string(FileAccess.get_open_error())])
+		return result
+	while not file.eof_reached():
+		var parts := file.get_line().strip_edges().split(commandSplitSymbol, false) # strip_edges eats \\r from pasted windows configs
+		if not parts.is_empty():
+			result.push_back(parts)
+	return result
 func _enableCheats() -> void:
 	cheatMode = !cheatMode
 	

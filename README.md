@@ -31,11 +31,15 @@ A lightweight in-game developer console for Godot 4. Toggle it open with `^`, ty
 | `list` | Print all registered (non-secret) commands |
 | `list -all` | Print all registered commands including secret ones |
 | `list -aliases` | Print all aliases and the command each one calls |
+| `list -chains` | Print all chains and the commands each one runs |
 | `clear` | Clear the console output |
 | `exit` | Closes the terminal, since closing per `^` does not work on linux rn |
-| `alias <command> <alias>` | Make `<alias>` call `<command>` (e.g. `alias shownav sn`). Saved to `user://hkconsole_aliases.txt`, one `<command> <alias>` per line, so configs can be copy-pasted. The command doesn't need to exist yet |
+| `alias <command> [params]; <alias>` | Make `<alias>` call `<command>` with those parameters (e.g. `alias list -aliases; la`). Parameters typed after the alias are appended. Without parameters the `;` is optional (`alias shownav sn`). Saved to `user://hkconsole_aliases.txt`, one `<command> [params]; <alias>` per line, so configs can be copy-pasted. The command doesn't need to exist yet |
 | `unalias <alias>` | Remove one alias |
 | `unalias -all` | Remove all aliases |
+| `chain <name> <command> [params]; <command> [params] ...` | Make `<name>` run the commands in order, steps separated by `;` (e.g. `chain fly enable_cheats; toggle_fly -fast`). Steps can be aliases. Saved to `user://hkconsole_chains.txt`, one `<name> <step>; <step> ...` per line. The commands don't need to exist yet |
+| `unchain <name>` | Remove one chain |
+| `unchain -all` | Remove all chains |
 
 ### Registering Commands
 
